@@ -142,36 +142,53 @@ exports.leoBank = functions.https.onRequest((request, response) => {
   // 3.4 Accessing exteranl APIs such as getting the current value of the stock market
   function getMarketData(app) {
     // Keeping track of the version of the function that will be deployed      
-    console.log('getMarketData v1');
+    console.log('getMarketData v3');
     // Declaring the market based on the prompt filled in by the user
     let market = app.getArgument(MARKET_ARGUMENT);
     let stock = app.getArgument(STOCK_ARGUMENT);
     // Declaring the Stock market api's url that will be used
-    let stockMarketUrl = 'https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=MSFT&interval=1min&apikey=demo';
-    // make the request to our stock market URL
-    https.get(stockMarketUrl, (res) => {
-      // declaring the body
-      let body = '';
-      // checking the status of the request
-      console.log('statusCode:', res.statusCode);
-      // On response, fill the data inside the body        
-      res.on('data', (data) => {
-        body += data;
-      });
-      // Once the body is filled with the informations        
-      res.on('end', () => {
-        // parse the body          
-        body = JSON.parse(body);
-        // Logging the body's response
-        console.log('res of stock market body', body);
-        // Answering the user with the sentence below          
-        app.ask('Alright, the stocks of ' + stock + ' are worth 1500$ at the moment !');
-      });
-      // Handling erros        
-    }).on('error', (e) => {
-      console.error(e);
-    });
+    // let stockMarketUrl;
+    // if (market === 'NASDAQ'){
+    //   stockMarketUrl = 'https://www.quandl.com/api/v3/datasets/WIKI/FB/data.json?api_key=Y1G_XZ3Mn18xxsnR1aAf';
+    // }
 
+    // if (market === 'DOW JONES' || market === 'DOWJONES' ){
+    //   stockMarketUrl = 'https://www.quandl.com/api/v3/datasets/WIKI/FB/data.json?api_key=Y1G_XZ3Mn18xxsnR1aAf';
+
+    // }
+    if (stock === 'Facebook' || stock === 'Fb' || stock === 'facebook') {
+      let stockMarketUrl = 'https://www.quandl.com/api/v3/datasets/WIKI/FB/data.json?api_key=Y1G_XZ3Mn18xxsnR1aAf';
+      // make the request to our stock market URL
+      https.get(stockMarketUrl, (res) => {
+        // declaring the body
+        let body = '';
+        // checking the status of the request
+        console.log('statusCode:', res.statusCode);
+        // On response, fill the data inside the body        
+        res.on('data', (data) => {
+          body += data;
+        });
+        // Once the body is filled with the informations        
+        res.on('end', () => {
+          // parse the body          
+          body = JSON.parse(body);
+          // Logging the body's response
+          console.log('res of stock market body', body);
+
+          let data = [];
+          data = body.dataset_data.data[0][1]
+          console.log('only data test', data);
+
+          // Answering the user with the sentence below          
+          app.ask('The stocks of ' + stock + ' are worth ' + data + '$ at the moment !');
+        });
+        // Handling erros        
+      }).on('error', (e) => {
+        console.error(e);
+      });
+    } else {
+      app.ask('Sorry I don\'t know that company');
+    }
 
   }
 
