@@ -143,112 +143,125 @@ exports.leoBank = functions.https.onRequest((request, response) => {
   // 3.4 Accessing exteranl APIs such as getting the current value of the stock market
   function getMarketData(app) {
     // Keeping track of the version of the function that will be deployed      
-    console.log('getMarketData v26');
+    console.log('getMarketData v36');
     // Declaring the market based on the prompt filled in by the user
     let market = app.getArgument(MARKET_ARGUMENT);
     let stock = app.getArgument(STOCK_ARGUMENT);
     let time = app.getArgument(TIME_ARGUMENT);
-    let stockMarketUrl = '';
 
+    // Define the API's route based on the stock parameter
+    let stockMarketUrl = '';
+    function getStockMarketUrl(){
+      // Facebook
     if (stock === 'Facebook' || stock === 'FB' || stock === 'facebook') {
       stockMarketUrl = 'https://www.quandl.com/api/v3/datasets/WIKI/FB/data.json?api_key=Y1G_XZ3Mn18xxsnR1aAf';
       console.log("facebook url", stockMarketUrl);
     }
+    // Google    
     else if (stock === "Google" || stock === 'GOOGL' || stock === 'Alphabet' || stock === 'Alphabet inc' || stock === 'Alphabet Inc') {
       stockMarketUrl = 'https://www.quandl.com/api/v3/datasets/WIKI/GOOGL/data.json?api_key=Y1G_XZ3Mn18xxsnR1aAf';
       console.log("Google url", stockMarketUrl);
     }
+    // Amazon    
     else if (stock === "Amazon" || stock === 'AMZN' || stock === 'amazon' || stock === 'Amazon.com' || stock === 'Amazon.com Inc' || stock === 'Amazon.com inc' || stock === 'Amazon inc' || stock === 'Amazon Inc') {
       stockMarketUrl = 'https://www.quandl.com/api/v3/datasets/WIKI/AMZN/data.json?api_key=Y1G_XZ3Mn18xxsnR1aAf';
       console.log("Amazon url", stockMarketUrl);
     }
+    // Apple    
     else if (stock === 'Apple' || stock === 'AAPL' || stock === 'Apple Inc.' || stock === 'Apple Inc' || stock === 'Apple inc' || stock === 'apple') {
       stockMarketUrl = 'https://www.quandl.com/api/v3/datasets/WIKI/AAPL/data.json?api_key=Y1G_XZ3Mn18xxsnR1aAf';
       console.log("Apple url", stockMarketUrl);
     }
+    // Microsoft    
     else if (stock === "Microsoft" || stock === 'MSFT' || stock === 'Microsoft Corporation' || stock === 'Microsoft Corp' || stock === 'Microsoft Corp.') {
       stockMarketUrl = 'https://www.quandl.com/api/v3/datasets/WIKI/MSFT/data.json?api_key=Y1G_XZ3Mn18xxsnR1aAf';
       console.log("Microsoft url", stockMarketUrl);
     }
+    // Intel
     else if (stock === "Intel" || stock === 'INTC' || stock === 'Intel Corporation' || stock === 'Intel Corpor' || stock === 'Intel Corp.') {
       stockMarketUrl = 'https://www.quandl.com/api/v3/datasets/WIKI/INTC/data.json?api_key=Y1G_XZ3Mn18xxsnR1aAf';
       console.log("Intel url", stockMarketUrl);
     }
-
+    // Cisco
     else if (stock === "Cisco" || stock === 'CSCO' || stock === 'CISCO' || stock === 'Cisco Systems, Inc.' || stock === 'Cisco Systems' || stock === 'Cisco Systems, Inc' || stock === 'Cisco Inc.' || stock === 'Cisco Inc' || stock === 'CISCO Inc.' || stock === 'Cisco inc' || stock === 'CISCO Inc' || stock === 'CISCO inc') {
       stockMarketUrl = 'https://www.quandl.com/api/v3/datasets/WIKI/CSCO/data.json?api_key=Y1G_XZ3Mn18xxsnR1aAf';
       console.log("Cisco url", stockMarketUrl);
     } else {
       app.ask('Sorry I don\'t know that company');
     }
- 
-  console.log(stockMarketUrl);
-  // Make the requests for the NASDAQ Market
-  if (market === 'NASDAQ' || market === 'nasdaq' || market === 'Nasdaq') {
-    // if (stock === 'Facebook' || stock === 'Fb' || stock === 'facebook' || stock === 'FB') {
-    // make the request to our stock market URL
-    https.get(stockMarketUrl, (res) => {
-      // declaring the body
-      let body = '';
-      // checking the status of the request
-      console.log('statusCode:', res.statusCode);
-      // On response, fill the data inside the body        
-      res.on('data', (data) => {
-        body += data;
+    }
+
+    function makeRequest() {
+      // make the request to our stock market URL
+      https.get(stockMarketUrl, (res) => {
+        // declaring the body
+        let body = '';
+        // checking the status of the request
+        console.log('statusCode:', res.statusCode);
+        // On response, fill the data inside the body        
+        res.on('data', (data) => {
+          body += data;
+        });
+        // Once the body is filled with the informations        
+        res.on('end', () => {
+          // parse the body          
+          body = JSON.parse(body);
+          // Logging the body's response
+          console.log('res of stock market body', body);
+          // Get the data based on the time parameter
+          let data = [];
+          if (time === 'Open' || time === 'open') {
+            data = body.dataset_data.data[0][1];
+            console.log('open', data);
+          }
+
+          if (time === 'High' || time === 'high') {
+            data = body.dataset_data.data[0][2];
+            console.log('high', data);
+          }
+
+          if (time === 'Low' || time === 'low') {
+            data = body.dataset_data.data[0][3];
+            console.log('low', data);
+          }
+          if (time === 'Close' || time === 'close') {
+            data = body.dataset_data.data[0][4];
+            console.log('close', data);
+          }
+          if (time === 'Volume' || time === 'volume') {
+            data = body.dataset_data.data[0][5];
+            console.log('volume', data);
+          }
+
+          // Answering the user with the sentence below          
+          app.ask('The stocks of ' + stock + ' are worth ' + data + '$ based on the ' + time + '!');
+        });
+        // Handling erros        
+      }).on('error', (e) => {
+        console.error(e);
       });
-      // Once the body is filled with the informations        
-      res.on('end', () => {
-        // parse the body          
-        body = JSON.parse(body);
-        // Logging the body's response
-        console.log('res of stock market body', body);
+    }
+    // Make the requests for the NASDAQ Market
+    if (market === 'NASDAQ' || market === 'nasdaq' || market === 'Nasdaq') {
+      getStockMarketUrl();
+      makeRequest();
+    } else {
+      app.ask('Sorry, ' + stock + ' isn\'t on the market you asked');
+    }
 
-        let data = [];
-        if (time === 'Open' || time === 'open') {
-          data = body.dataset_data.data[0][1];
-          console.log('open', data);
-        }
-
-        if (time === 'High' || time === 'high') {
-          data = body.dataset_data.data[0][2];
-          console.log('high', data);
-        }
-
-        if (time === 'Low' || time === 'low') {
-          data = body.dataset_data.data[0][3];
-          console.log('low', data);
-        }
-        if (time === 'Close' || time === 'close') {
-          data = body.dataset_data.data[0][4];
-          console.log('close', data);
-        }
-        if (time === 'Volume' || time === 'volume') {
-          data = body.dataset_data.data[0][5];
-          console.log('volume', data);
-        }
-
-        // Answering the user with the sentence below          
-        app.ask('The stocks of ' + stock + ' are worth ' + data + '$ based on the ' + time + '!');
-      });
-      // Handling erros        
-    }).on('error', (e) => {
-      console.error(e);
-    });
-    // } else {
-    //   app.ask('Sorry I don\'t know that company');
-    // }
-  } else {
-    app.ask('Sorry, ' + stock + ' isn\'t on the market you asked');
   }
 
-}
+  // 3.X Declaring the endConversation function just to link the DialogFlow agent to the Google Assistant
+  function endConversation(app) {}
 
-// 3.X Declaring the endConversation function just to link the DialogFlow agent to the Google Assistant
-function endConversation(app) {}
+  // 4. build an action map, which maps intent names to functions
+  let actionMap = new Map();
+  actionMap.set(MAKE_ACTION, makeName);
+  actionMap.set(BALANCE_ACTION, giveBalance);
+  actionMap.set(TRANSFER_ACTION, transferMoney);
+  actionMap.set(STOCK_MARKET_ACTION, getMarketData);
+  actionMap.set(END_ACTION, endConversation);
 
-// 4. build an action map, which maps intent names to functions
-let actionMap = new Map(); actionMap.set(MAKE_ACTION, makeName); actionMap.set(BALANCE_ACTION, giveBalance); actionMap.set(TRANSFER_ACTION, transferMoney); actionMap.set(STOCK_MARKET_ACTION, getMarketData); actionMap.set(END_ACTION, endConversation);
-
-app.handleRequest(actionMap);
+  app.handleRequest(actionMap);
 
 });
