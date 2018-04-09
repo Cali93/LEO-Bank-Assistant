@@ -3,7 +3,6 @@
 process.env.DEBUG = 'actions-on-google:*';
 const App = require('actions-on-google').DialogflowApp;
 const functions = require('firebase-functions');
-const request = require('request');
 const https = require('https');
 
 // a. the action name from the make_name Dialogflow intent
@@ -15,6 +14,10 @@ const BALANCE_ACTION = 'accountBalanceCheck';
 const TRANSFER_ACTION = 'transferMoney';
 // stock market intent
 const STOCK_MARKET_ACTION = 'stock_market';
+// make_walk intent
+const MAKE_WALK_ACTION = 'make_walk';
+// give site desc
+const GIVE_DESC_ACTION = 'give_desc';
 // end the conversation intent
 const END_ACTION = 'endConversation';
 
@@ -35,6 +38,12 @@ const COMMUNICATION_ARGUMENT = 'communication';
 const MARKET_ARGUMENT = 'market';
 const STOCK_ARGUMENT = 'stock';
 const TIME_ARGUMENT = 'time'
+
+// b. 5 maps feature
+const LOCATION_ARGUMENT = 'location';
+const VOLUME_ARGUMENT = 'volume';
+
+const SITE_NAME_ARGUMENT = 'sitename';
 // c. export a module containing the differents functions
 exports.leoBank = functions.https.onRequest((request, response) => {
   // 1. declaring our app so that we can make requests
@@ -46,6 +55,108 @@ exports.leoBank = functions.https.onRequest((request, response) => {
   console.log('Request headers: ' + JSON.stringify(request.headers));
   console.log('Request body: ' + JSON.stringify(request.body));
 
+  // 3.0 MAP functions
+  function makeWalk(app){
+    let location = app.getArgument(LOCATION_ARGUMENT);
+    let volume = app.getArgument(VOLUME_ARGUMENT);
+        // Keeping track of the version of the function that will be deployed
+        console.log('makeWalk v48');
+        // make the request to our api to have the informations
+        https.get('https://arcane-waters-30067.herokuapp.com/parcours/', (res) => {
+          // declaring the body
+          let body = '';
+          // checking the status of the request
+          console.log('statusCode:', res.statusCode);
+          // On response, fill the data inside the body
+          res.on('data', (data) => {
+            body += data;
+          });
+          // Once the body is filled with the informations
+          res.on('end', () => {
+            // parse the body
+            body = JSON.parse(body);
+            console.log('on res body', body);
+            // get parcours
+            let parcourz = body.parcours
+            let aparcour;
+            let aname;
+            let adescription;
+            let aurl;
+            parcourz.forEach(parcour => {
+              aparcour = parcour              
+              adescription = parcour.description
+              aurl = parcour.url
+              aname = parcour.name
+              console.log('this is after merge', aparcour);
+            })
+            // let reqParcours = body.parcours[0].description + ' ' + body.parcours[0].url;
+            console.log('on res parcours:', aparcour);
+            // Answering the user with the sentence below
+            app.ask(app.buildRichResponse()
+            // Introduce the carousel
+            .addSimpleResponse('Alright ! Here are a few walks you would like to check out by clicking on the bottom left or bottom right of the screen:')
+            .addBrowseCarousel(
+              app.buildBrowseCarousel()
+              // Add the items to the carousel
+                .addItems([
+                  app.buildBrowseItem(aname, aurl)
+                    .setDescription(adescription)
+                    .setFooter("Item 1 footer")
+                    .setImage('https://cdn.tutsplus.com/vector/uploads/2013/12/cartoonmovements-18.1a.gif', 'Parcours 1'),
+                  app.buildBrowseItem("Laeken", aurl)
+                    .setDescription("A walk in Laeken, showing you the best architectural pieces")
+                    .setFooter("Item 2 footer")
+                    .setImage('https://o1.llb.be/image/thumb/5987f992cd706e263f3db7cd.jpg', 'Parcours 2')
+                ])
+            )
+          );
+          });
+          // Handling erros
+        }).on('error', (e) => {
+          console.error(e);
+        });
+  }
+
+  function giveDesc(app){
+    let siteName = app.getArgument(SITE_NAME_ARGUMENT);
+     // Keeping track of the version of the function that will be deployed
+     console.log('give site desc v10');
+     // make the request to our api to have the informations
+     https.get('https://arcane-waters-30067.herokuapp.com/parcours/', (res) => {
+       // declaring the body
+       let body = '';
+       // checking the status of the request
+       console.log('statusCode:', res.statusCode);
+       // On response, fill the data inside the body
+       res.on('data', (data) => {
+         body += data;
+       });
+       // Once the body is filled with the informations
+       res.on('end', () => {
+         // parse the body
+         body = JSON.parse(body);
+         console.log('on res body', body);
+         // get parcours
+         let parcourz = body.parcours;
+         let aparcour;
+         let siteDesc = '';
+         parcourz.forEach(parcour => {
+           aparcour = parcour
+           if (siteName === "becode" || siteName === "BeCode" || siteName === "Be code" || siteName === "be code" || siteName === "Becode"){
+            siteDesc = parcour.stops[0].siteDesc
+           }
+           if (siteName === "Avenue Louise" || siteName === "Avenue louise" || siteName === "Louise Avenue" || siteName === "avenue louise"){
+            siteDesc = parcour.stops[1].siteDesc
+           }
+         })
+         // Answering the user with the sentence below
+         app.ask(siteDesc);         
+       });
+       // Handling erros
+     }).on('error', (e) => {
+       console.error(e);
+     });
+  }
   // 3.1 The function that generates the silly name for the make_name intent
   function makeName(app) {
     let number = app.getArgument(NUMBER_ARGUMENT);
@@ -260,6 +371,8 @@ exports.leoBank = functions.https.onRequest((request, response) => {
   actionMap.set(BALANCE_ACTION, giveBalance);
   actionMap.set(TRANSFER_ACTION, transferMoney);
   actionMap.set(STOCK_MARKET_ACTION, getMarketData);
+  actionMap.set(MAKE_WALK_ACTION, makeWalk);
+  actionMap.set(GIVE_DESC_ACTION, giveDesc)
   actionMap.set(END_ACTION, endConversation);
 
   app.handleRequest(actionMap);
