@@ -1,2 +1,3 @@
 node_modules
 API/config/_db.php
+API/.ovhconfig
