@@ -1,0 +1,40 @@
+RewriteEngine On
+Options -MultiViews
+#RewriteBase /
+
+#########
+# HTTPS #
+#########
+
+RewriteCond %{SERVER_PORT} 80
+RewriteRule ^(.*)$ https://rotterdam.tcbmedia.eu/$1 [R=301,L]
+
+##################
+# Security check #
+##################
+
+RewriteCond %{QUERY_STRING} mosConfig_[a-zA-Z_]{1,21}(=|\%3D) [OR]
+# Block out any script trying to base64_encode crap to send via URL
+RewriteCond %{QUERY_STRING} base64_encode.*\(.*\) [OR]
+# Block out any script that includes a <script> tag in URL
+RewriteCond %{QUERY_STRING} (\<|%3C).*script.*(\>|%3E) [NC,OR]
+# Block out any script trying to set a PHP GLOBALS variable via URL
+RewriteCond %{QUERY_STRING} GLOBALS(=|\[|\%[0-9A-Z]{0,2}) [OR]
+# Block out any script trying to modify a _REQUEST variable via URL
+RewriteCond %{QUERY_STRING} _REQUEST(=|\[|\%[0-9A-Z]{0,2})
+# Send all blocked request to homepage with 403 Forbidden error!
+RewriteRule ^(.*)$ index.php [F,L]
+
+###############
+# REDIRECTION #
+###############
+
+RewriteRule ^user/([0-9]+)/information/$ user.php?idUser=$1&type=informationAboutUser [L,QSA]
+RewriteRule ^user/([0-9]+)/agency/$ user.php?idUser=$1&type=agencyUser [L,QSA]
+RewriteRule ^user/([0-9]+)/accounts/$ accounts.php?idUser=$1&type=accountsList [L,QSA]
+RewriteRule ^user/([0-9]+)/cards/$ accounts.php?idUser=$1&type=cardsList [L,QSA]
+RewriteRule ^agency/$ agency.php?type=agencyList [L,QSA]
+RewriteRule ^agency/([0-9]+)/$ agency.php?idAgency=$1&type=agencyInformation [L,QSA]
+RewriteRule ^demo/accounts/$ demo.php?type=accountsList [L,QSA]
+#RewriteRule ^user/([0-9]+)/transfertwithIban/([a-zA-Z0-9]+)/([0-9]+)$ operation.php?fromIban=$1&toIban=$2&amount=$3&communication=$4&type=bankTransfertIban [QSA]
+#RewriteRule ^user/([0-9]+)/transfertwithName/([a-zA-Z0-9]+)/([0-9]+)$ operation.php?fromIban=$1&toName=$2&amount=$3&communication=$4&type=bankTransfertName [QSA]
